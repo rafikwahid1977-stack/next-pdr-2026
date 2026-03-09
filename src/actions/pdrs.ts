@@ -225,15 +225,16 @@ export async function getPdrOfMachine(machine: string) {
                 images_Pdr: (() => {
                   const imageUrl = getFieldValue(
                     pdr,
-                    "images_Pdr",
                     "image_Pdr",
+                    "images_Pdr",
                     "image_pdr",
                     "imagePdr",
+                    "IMAGE_PDR",
+                    "IMAGE",
                     "Image",
                     "image",
                     "Img",
                     "img",
-                    "IMAGE",
                   );
                   console.log(
                     `Image field for code ${pdr.code || "unknown"}:`,
@@ -289,15 +290,16 @@ export async function getAllPdrs() {
         images_Pdr: (() => {
           const imageUrl = getFieldValue(
             pdr,
-            "images_Pdr",
             "image_Pdr",
+            "images_Pdr",
             "image_pdr",
             "imagePdr",
+            "IMAGE_PDR",
+            "IMAGE",
             "Image",
             "image",
             "Img",
             "img",
-            "IMAGE",
           );
           return imageUrl ? [imageUrl] : [];
         })(),

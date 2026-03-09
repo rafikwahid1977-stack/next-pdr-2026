@@ -60,9 +60,11 @@ export function PdrsGallery({
   };
 
   const getImageSrc = (imageUrl: string | null, code?: number): string => {
-    const src = imageUrl || DEFAULT_IMAGE;
+    const src = imageUrl && imageUrl.trim() ? imageUrl : DEFAULT_IMAGE;
     if (code) {
-      console.log(`Pièce #${code}: utilisation de l'URL: ${src}`);
+      console.log(
+        `Pièce #${code}: image_url = ${imageUrl}, utilisation de: ${src.substring(0, 60)}...`,
+      );
     }
     return src;
   };
@@ -133,8 +135,19 @@ export function PdrsGallery({
                         className="object-contain group-hover:scale-105 transition-transform duration-300 p-2"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         priority={index < 8}
-                        onLoad={() => handleImageLoad(pdr.code)}
-                        onError={() => handleImageError(pdr.code)}
+                        onLoad={() => {
+                          setImageLoadState((prev) => ({
+                            ...prev,
+                            [pdr.code]: true,
+                          }));
+                          handleImageLoad(pdr.code);
+                        }}
+                        onError={() => {
+                          handleImageError(pdr.code);
+                          console.error(
+                            `Image failed to load for Pièce #${pdr.code}: ${getImageSrc(pdr.image_url)}`,
+                          );
+                        }}
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 rounded-lg" />
 

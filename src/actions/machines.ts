@@ -197,13 +197,25 @@ export async function getAllMachinesWithPieces(): Promise<{
     }
 
     // Mapper les machines avec le nombre de pièces
-    const machinesWithPieces = machines.map((machine) => ({
-      numero: machine.numero,
-      nom_machine: machine.nom_machine,
-      img_machine: machine.img_machine || null,
-      designation_complete: machine.Designation_Complete,
-      pieces_count: pieceCountMap.get(machine.nom_machine) || 0,
-    }));
+    const DEFAULT_MACHINE_IMAGE =
+      "https://res.cloudinary.com/dtrz3i2f5/image/upload/v1739457347/next-app-pdr-2026/empty_qswmu1.png";
+
+    console.log("getAllMachinesWithPieces - Machines count:", machines.length);
+    const machinesWithPieces = machines.map((machine) => {
+      const rawUrl = machine.img_machine?.trim() || null;
+      const imgUrl =
+        rawUrl && rawUrl.length > 0 ? rawUrl.trimEnd() : DEFAULT_MACHINE_IMAGE;
+      console.log(
+        `Machine #${machine.numero}: img_machine = ${machine.img_machine}, using: ${imgUrl ? "custom URL" : "default"}`,
+      );
+      return {
+        numero: machine.numero,
+        nom_machine: machine.nom_machine,
+        img_machine: imgUrl,
+        designation_complete: machine.Designation_Complete,
+        pieces_count: pieceCountMap.get(machine.nom_machine) || 0,
+      };
+    });
 
     return {
       success: true,
@@ -224,17 +236,13 @@ export async function getAllMachinesWithPieces(): Promise<{
  */
 function getFieldValue(obj: any, ...possibleFieldNames: string[]): any {
   for (const fieldName of possibleFieldNames) {
-    if (
-      fieldName in obj &&
-      obj[fieldName] !== null &&
-      obj[fieldName] !== undefined
-    ) {
+    if (fieldName in obj) {
       console.log(`getFieldValue: Found "${fieldName}" = ${obj[fieldName]}`);
       return obj[fieldName];
     }
   }
   console.log(
-    `getFieldValue: No field found from [${possibleFieldNames.join(", ")}]`,
+    `getFieldValue: No field found from [${possibleFieldNames.join(", ")}]. Available keys: [${Object.keys(obj).join(", ")}]`,
   );
   return null;
 }
@@ -285,6 +293,26 @@ export async function getPdrsForMachine(machineId: number) {
     console.log("Available columns in table_pdrs:", Object.keys(allPdrs[0]));
     console.log("First PDR sample:", JSON.stringify(allPdrs[0], null, 2));
 
+    // Debug: check image field specifically
+    const firstPdr = allPdrs[0];
+    const imageFieldCandidates = [
+      "images_Pdr",
+      "image_Pdr",
+      "image_pdr",
+      "imagePdr",
+      "IMAGE_PDR",
+      "Image",
+      "image",
+      "Img",
+      "img",
+    ];
+    console.log("Image field check:");
+    imageFieldCandidates.forEach((field) => {
+      console.log(
+        `  ${field}: ${firstPdr[field] !== undefined ? firstPdr[field] || "EMPTY/NULL" : "MISSING"}`,
+      );
+    });
+
     // Detect machine column name
     let machineColumnName: string | null = null;
     const possibleColumnNames = [
@@ -321,11 +349,12 @@ export async function getPdrsForMachine(machineId: number) {
         // Use getFieldValue helper to find fields from multiple possible column names
         const image_url = getFieldValue(
           pdr,
-          "images_Pdr",
           "image_Pdr",
+          "images_Pdr",
           "image_pdr",
           "imagePdr",
           "IMAGE_PDR",
+          "IMAGE",
           "Image",
           "image",
           "Img",
@@ -403,6 +432,165 @@ export async function getPdrsForMachine(machineId: number) {
       error: String(error),
       data: [],
       machine: null,
+    };
+  }
+}
+
+/**
+ * Search for PDRs by code, designation_pdr, or reference
+ */
+export async function searchPdrs(searchTerm: string): Promise<{
+  success: boolean;
+  data: Array<{
+    code: number;
+    numero: number;
+    designation_pdr: string;
+    image_url: string | null;
+    stock_actuel: number;
+    emplacement: string | null;
+    reference: string | null;
+    nom_machine: string;
+  }>;
+  error?: string;
+}> {
+  try {
+    if (!searchTerm || searchTerm.trim().length < 4) {
+      return {
+        success: true,
+        data: [],
+      };
+    }
+
+    const trimmedSearch = searchTerm.trim().toLowerCase();
+
+    // Get all PDRs
+    const { data: allPdrs, error: pdrsError } = await supabaseConfig
+      .from("table_pdrs")
+      .select("*");
+
+    if (pdrsError) throw pdrsError;
+
+    if (!allPdrs || allPdrs.length === 0) {
+      return {
+        success: true,
+        data: [],
+      };
+    }
+
+    // Filter PDRs based on search term
+    const filteredPdrs = allPdrs.filter((pdr: any) => {
+      const code = String(pdr.code || "").toLowerCase();
+      const designation = String(
+        pdr.DESIGNATION_PDR ||
+          pdr.designation_pdr ||
+          pdr.Designation_Pdr ||
+          pdr.designation_Pdr ||
+          "",
+      ).toLowerCase();
+      const reference = String(
+        pdr.Ref ||
+          pdr.reference ||
+          pdr.Reference ||
+          pdr.REFERENCE ||
+          pdr.REF ||
+          "",
+      ).toLowerCase();
+
+      return (
+        code.includes(trimmedSearch) ||
+        designation.includes(trimmedSearch) ||
+        reference.includes(trimmedSearch)
+      );
+    });
+
+    // Map filtered PDRs to result format
+    const results = filteredPdrs
+      .map((pdr: any) => {
+        const image_url = getFieldValue(
+          pdr,
+          "image_Pdr",
+          "images_Pdr",
+          "image_pdr",
+          "imagePdr",
+          "IMAGE_PDR",
+          "IMAGE",
+          "Image",
+          "image",
+          "Img",
+          "img",
+        );
+
+        const stock_actuel =
+          getFieldValue(
+            pdr,
+            "Stock Actuel",
+            "stock_actuel",
+            "StockActuel",
+            "STOCK_ACTUEL",
+          ) || 0;
+
+        const emplacement = getFieldValue(
+          pdr,
+          "EMPLACEMENT",
+          "emplacement",
+          "Emplacement",
+          "EMPL",
+        );
+
+        const reference = getFieldValue(
+          pdr,
+          "Ref",
+          "reference",
+          "Reference",
+          "REFERENCE",
+          "REF",
+        );
+
+        const numero = getFieldValue(pdr, "Numero", "numero", "NUMERO");
+
+        const designation_pdr = getFieldValue(
+          pdr,
+          "DESIGNATION_PDR",
+          "designation_pdr",
+          "Designation_Pdr",
+          "designation_Pdr",
+        );
+
+        const nom_machine = getFieldValue(
+          pdr,
+          "Machine",
+          "machine",
+          "nom_machine",
+          "nom_Machine",
+        );
+
+        return {
+          code: pdr.code,
+          numero,
+          designation_pdr,
+          image_url,
+          stock_actuel,
+          emplacement,
+          reference,
+          nom_machine: nom_machine || "",
+        };
+      })
+      .sort((a, b) => {
+        const numA = a.numero || 0;
+        const numB = b.numero || 0;
+        return numA - numB;
+      });
+
+    return {
+      success: true,
+      data: results,
+    };
+  } catch (error) {
+    console.error("Error searching PDRs:", error);
+    return {
+      success: false,
+      data: [],
+      error: String(error),
     };
   }
 }
