@@ -1,21 +1,78 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/useAuth";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Rediriger les utilisateurs connectés vers leur page d'accueil
+  // Ils ne peuvent retourner à la page publique que via le bouton de déconnexion
+  useEffect(() => {
+    if (user?.username) {
+      // L'utilisateur est déjà connecté, le rediriger vers sa page d'accueil
+      if (user.username === "Boudjellah") {
+        router.push("/electro");
+      } else if (["Boualem", "Sadek", "Youcef"].includes(user.username)) {
+        router.push("/mecano");
+      } else {
+        router.push("/machines");
+      }
+    }
+  }, [user, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Logique de connexion ici
-    console.log("Login attempt:", { username, password });
-    setIsLoading(false);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.message || "Erreur lors de la connexion");
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success("Connexion réussie!");
+
+      // Redirect based on username or role
+      if (username === "Boudjellah") {
+        router.push("/electro");
+      } else if (["Boualem", "Sadek", "Youcef"].includes(username)) {
+        router.push("/mecano");
+      } else if (username === "Ryad") {
+        // Ryad - accès aux pages admin uniquement
+        router.push("/admin/dashboard");
+      } else {
+        const role = data.data?.user?.role;
+        if (role === "admin") {
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/machines");
+        }
+      }
+    } catch (error) {
+      toast.error("Erreur serveur");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,6 +92,7 @@ function LoginPage() {
                 placeholder="Entrez votre utilisateur"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                disabled={isLoading}
                 required
               />
             </div>
@@ -48,6 +106,7 @@ function LoginPage() {
                 placeholder="Entrez votre mot de passe"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
                 required
               />
             </div>

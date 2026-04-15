@@ -179,13 +179,6 @@ export default function MachinesPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-800">Machines</h1>
-        </div>
-      </nav>
-
       {/* Main Content */}
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">

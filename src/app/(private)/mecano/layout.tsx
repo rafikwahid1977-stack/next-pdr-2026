@@ -1,14 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { FiMenu, FiX } from "react-icons/fi";
+import { useAuth } from "@/hooks/useAuth";
+import { useWelcomeToast } from "@/hooks/useWelcomeToast";
 
-function AdminLayout({ children }: { children: React.ReactNode }) {
+function MecanoLayout({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showElectroNav, setShowElectroNav] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
+
+  // Afficher le toast de bienvenue
+  useWelcomeToast();
+
+  // Check if coming from electro
+  useEffect(() => {
+    const fromElectro = searchParams.get("from") === "electro";
+    setShowElectroNav(fromElectro);
+  }, [searchParams]);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -31,15 +45,20 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const menuItems = [
-    { label: "Dashboard", href: "/admin/dashboard" },
-    { label: "Fournisseurs", href: "/admin/dashboard/fournisseurs" },
-    { label: "Interventions", href: "/admin/dashboard/interventions" },
-    { label: "Machines", href: "/admin/dashboard/machines" },
-    { label: "PDRs", href: "/admin/dashboard/pdrs" },
-    { label: "Programmes", href: "/admin/dashboard/programmes" },
-    { label: "Profil Utilisateur", href: "/admin/dashboard/user-profile" },
+  // Menu ElectroNav - quand on vient de electro
+  const electroMenuItems = [
+    { label: "Electro", href: "/electro" },
+    { label: "PDR's", href: "/machines?from=electro" },
+    { label: "Interventions Mecano", href: "/mecano?from=electro" },
   ];
+
+  const menuItems = showElectroNav
+    ? electroMenuItems
+    : [
+        { label: "Mecano", href: "/mecano" },
+        { label: "PDR's", href: "/machines" },
+        { label: "Permanance-electro", href: "/electro" },
+      ];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -47,14 +66,28 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
       <nav
         className={`${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white shadow-lg transition-transform duration-300 ease-in-out lg:static lg:translate-x-0`}
+        } fixed inset-y-0 left-0 z-50 w-64 ${
+          showElectroNav
+            ? "bg-slate-900 text-white border-slate-700"
+            : "bg-gray-200 text-gray-900 border-gray-300"
+        } shadow-lg transition-transform duration-300 ease-in-out lg:static lg:translate-x-0`}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-6 border-b border-slate-700">
-            <h1 className="text-xl font-bold">Admin Panel</h1>
+          <div
+            className={`flex items-center justify-between p-6 border-b ${
+              showElectroNav ? "border-slate-700" : "border-gray-300"
+            }`}
+          >
+            <h1 className="text-xl font-bold">
+              {showElectroNav ? "Electro" : "Mecano"}
+            </h1>
             <button
               onClick={toggleMenu}
-              className="lg:hidden text-white hover:text-gray-200"
+              className={`lg:hidden ${
+                showElectroNav
+                  ? "text-white hover:text-gray-200"
+                  : "text-gray-900 hover:text-gray-700"
+              }`}
             >
               <FiX size={24} />
             </button>
@@ -66,7 +99,11 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className="block px-6 py-3 hover:bg-slate-700 transition-colors duration-200"
+                  className={`block px-6 py-3 transition-colors duration-200 ${
+                    showElectroNav
+                      ? "hover:bg-slate-700 text-white"
+                      : "hover:bg-gray-300 text-gray-900"
+                  }`}
                 >
                   {item.label}
                 </Link>
@@ -74,7 +111,11 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
             ))}
           </ul>
 
-          <div className="p-6 border-t border-slate-700">
+          <div
+            className={`p-6 border-t ${
+              showElectroNav ? "border-slate-700" : "border-gray-300"
+            }`}
+          >
             <button
               onClick={handleLogout}
               className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
@@ -104,7 +145,9 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
             >
               <FiMenu size={24} />
             </button>
-            <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {showElectroNav ? "Electro" : "Mecano"}
+            </h2>
             <div className="w-8" />
           </div>
         </header>
@@ -116,4 +159,4 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default AdminLayout;
+export default MecanoLayout;

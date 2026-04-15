@@ -191,3 +191,43 @@ export const switchStatusUser = async (id: string) => {
     };
   }
 };
+
+export const loginUser = async (username: string, password: string) => {
+  try {
+    // Find user by username
+    const { data: user, error: fetchError } = await supabaseConfig
+      .from("table_users")
+      .select("*")
+      .eq("username", username)
+      .single();
+
+    if (fetchError || !user) {
+      throw new Error("Identifiants invalides");
+    }
+
+    // Check password
+    const isPasswordValid = bcrypt.compareSync(password, user.password);
+    if (!isPasswordValid) {
+      throw new Error("Identifiants invalides");
+    }
+
+    // Check user status
+    if (user.status !== "active") {
+      throw new Error("Compte désactivé. Veuillez contacter l'administrateur");
+    }
+
+    return {
+      success: true,
+      data: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};

@@ -22,12 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <html lang="en">
-        <body className={`antialiased ${montserrat.className}`}>
-          {children}
-          <Toaster />
-        </body>
-      </html>
+      <body className={`antialiased ${montserrat.className}`}>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

@@ -25,3 +25,39 @@ export interface IPdr {
   reference: string;
   images_Pdr: string[];
 }
+
+export interface IElectro {
+  id: string;
+  observation: "ras" | "intervention";
+  code_intervention: string;
+  machine: string;
+  partie_machine: string;
+  intervention: string;
+  photos_intervention: string[];
+  pieces: {
+    designation: string;
+    reference: string;
+    code: string;
+    quantite: number;
+    img_piece: string;
+  }[];
+  created_at: string;
+}
+
+export interface IMecano {
+  id: string;
+  code_intervention: string;
+  machine: string;
+  partie_machine: string;
+  description: string;
+  imgs_intervention: string[];
+  pieces: {
+    designation: string;
+    reference: string;
+    code: string;
+    quantite: number;
+    img_piece: string;
+  }[];
+  user: string;
+  created_at: string;
+}
