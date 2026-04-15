@@ -37,7 +37,7 @@ export interface IElectro {
   pieces: {
     designation: string;
     reference: string;
-    code: string;
+    code: number;
     quantite: number;
     img_piece: string;
   }[];
@@ -54,7 +54,7 @@ export interface IMecano {
   pieces: {
     designation: string;
     reference: string;
-    code: string;
+    code: number;
     quantite: number;
     img_piece: string;
   }[];
