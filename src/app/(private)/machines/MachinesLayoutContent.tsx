@@ -1,22 +1,34 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { FiMenu, FiX } from "react-icons/fi";
 import { useAuth } from "@/hooks/useAuth";
 import { useWelcomeToast } from "@/hooks/useWelcomeToast";
 
-function ElectroLayout({ children }: { children: React.ReactNode }) {
+interface MachinesLayoutContentProps {
+  children: React.ReactNode;
+}
+
+export function MachinesLayoutContent({
+  children,
+}: MachinesLayoutContentProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showElectroNav, setShowElectroNav] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   // Afficher le toast de bienvenue
   useWelcomeToast();
+
+  // Check if coming from electro
+  useEffect(() => {
+    const fromElectro = searchParams.get("from") === "electro";
+    setShowElectroNav(fromElectro);
+  }, [searchParams]);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -43,18 +55,45 @@ function ElectroLayout({ children }: { children: React.ReactNode }) {
     user?.username || "",
   );
 
-  // Menu ElectroNav - toujours afficher les trois options
+  // Menu ElectroNav - quand on vient de electro
   const electroMenuItems = [
     { label: "Electro", href: "/electro" },
     { label: "PDR's", href: "/machines?from=electro" },
     { label: "Interventions Mecano", href: "/mecano?from=electro" },
   ];
 
-  const menuItems = electroMenuItems;
+  const defaultMenuItems = isMecanoUser
+    ? [
+        { label: "Mecano", href: "/mecano" },
+        { label: "PDR's", href: "/machines" },
+        { label: "Permanance-electro", href: "/electro" },
+      ]
+    : [
+        { label: "Machines", href: "/machines" },
+        {
+          label:
+            user?.username === "Boudjellah" ? "Interventions" : "Permanances",
+          href: "/electro",
+        },
+      ];
 
-  const navBgColor = "bg-slate-900 text-white";
-  const navBorderColor = "border-slate-700";
-  const navHoverColor = "hover:bg-slate-700";
+  const menuItems = showElectroNav ? electroMenuItems : defaultMenuItems;
+
+  const navBgColor = showElectroNav
+    ? "bg-slate-900 text-white"
+    : isMecanoUser
+      ? "bg-gray-200 text-gray-900"
+      : "bg-slate-900 text-white";
+  const navBorderColor = showElectroNav
+    ? "border-slate-700"
+    : isMecanoUser
+      ? "border-gray-300"
+      : "border-slate-700";
+  const navHoverColor = showElectroNav
+    ? "hover:bg-slate-700"
+    : isMecanoUser
+      ? "hover:bg-gray-300"
+      : "hover:bg-slate-700";
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -68,10 +107,22 @@ function ElectroLayout({ children }: { children: React.ReactNode }) {
           <div
             className={`flex items-center justify-between p-6 border-b ${navBorderColor}`}
           >
-            <h1 className="text-xl font-bold">Electro</h1>
+            <h1 className="text-xl font-bold">
+              {showElectroNav
+                ? "Electro"
+                : isMecanoUser
+                  ? "Mecano"
+                  : "Machines"}
+            </h1>
             <button
               onClick={toggleMenu}
-              className={`lg:hidden text-white hover:text-gray-200`}
+              className={`lg:hidden ${
+                showElectroNav
+                  ? "text-white hover:text-gray-200"
+                  : isMecanoUser
+                    ? "text-gray-900 hover:text-gray-700"
+                    : "text-white hover:text-gray-200"
+              }`}
             >
               <FiX size={24} />
             </button>
@@ -91,7 +142,7 @@ function ElectroLayout({ children }: { children: React.ReactNode }) {
             ))}
           </ul>
 
-          <div className={`p-6 border-t ${navBorderColor}`}>
+          <div className="p-6 border-t border-slate-700">
             <button
               onClick={handleLogout}
               className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
@@ -121,16 +172,16 @@ function ElectroLayout({ children }: { children: React.ReactNode }) {
             >
               <FiMenu size={24} />
             </button>
-            <h2 className="text-2xl font-bold text-gray-800">Electro</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {showElectroNav ? "Electro" : "Machines"}
+            </h2>
             <div className="w-8" />
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );
 }
-
-export default ElectroLayout;

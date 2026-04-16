@@ -2,6 +2,8 @@ import React from "react";
 import { getAllMachines } from "@/actions/machines";
 import { PdrsPageContent } from "@/components/pdr/PdrsPageContent";
 
+export const dynamic = "force-dynamic";
+
 async function PdrsPage() {
   const machinesResult = await getAllMachines();
 
