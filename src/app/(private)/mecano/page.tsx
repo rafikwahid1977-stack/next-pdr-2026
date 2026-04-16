@@ -135,8 +135,25 @@ function MecanoPage() {
   const [selectedPiecePhotos, setSelectedPiecePhotos] = useState<string[]>([]);
   const [selectedPiecePhotoIndex, setSelectedPiecePhotoIndex] = useState(0);
   const [hideAddButton, setHideAddButton] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const { user } = useAuth();
+
+  // Global error handler
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error("Erreur détectée:", event.error);
+      // Set error message to be displayed to user
+      setErrorMessage(
+        "Une erreur s'est produite. Veuillez rafraîchir la page et réessayer.",
+      );
+    };
+
+    window.addEventListener("error", handleError);
+    return () => {
+      window.removeEventListener("error", handleError);
+    };
+  }, []);
 
   // Check if coming from electro or if user is Boudjellah (can't add in mecano)
   useEffect(() => {
@@ -178,32 +195,34 @@ function MecanoPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (
-      !formData.machine.trim() ||
-      !formData.description.trim() ||
-      formData.imgs_intervention.length === 0
-    ) {
-      alert("Veuillez remplir tous les champs requis");
-      return;
-    }
-
-    // Check if selected machine has subparts and partie_machine is required
-    const selectedMachine = machineParts.find(
-      (m) => m.label === formData.machine,
-    );
-    if (
-      selectedMachine &&
-      selectedMachine.sub &&
-      selectedMachine.sub.length > 0 &&
-      !formData.partie_machine.trim()
-    ) {
-      alert("Veuillez sélectionner une partie de la machine");
-      return;
-    }
-
-    setSubmitting(true);
     try {
+      setErrorMessage(null);
+
+      // Validation
+      if (
+        !formData.machine.trim() ||
+        !formData.description.trim() ||
+        formData.imgs_intervention.length === 0
+      ) {
+        setErrorMessage("Veuillez remplir tous les champs requis");
+        return;
+      }
+
+      // Check if selected machine has subparts and partie_machine is required
+      const selectedMachine = machineParts.find(
+        (m) => m.label === formData.machine,
+      );
+      if (
+        selectedMachine &&
+        selectedMachine.sub &&
+        selectedMachine.sub.length > 0 &&
+        !formData.partie_machine.trim()
+      ) {
+        setErrorMessage("Veuillez sélectionner une partie de la machine");
+        return;
+      }
+
+      setSubmitting(true);
       // Prepare submission data
       const submissionData: any = {
         machine: formData.machine.trim(),
@@ -217,7 +236,6 @@ function MecanoPage() {
       const result = await addMecanoInterv(submissionData);
 
       if (result.success && result.data && result.data.length > 0) {
-        alert("Intervention mécanique ajoutée avec succès");
         setInterventions([result.data[0], ...interventions]);
         setOpenDialog(false);
         setFormData({
@@ -229,11 +247,15 @@ function MecanoPage() {
         setShowPieces(false);
         setPieces([]);
       } else {
-        alert(`Erreur: ${result.error}`);
+        setErrorMessage(`Erreur: ${result.error}`);
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Erreur lors de l'ajout de l'intervention");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de l'ajout de l'intervention",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -265,6 +287,12 @@ function MecanoPage() {
                 </p>
               </DialogHeader>
 
+              {errorMessage && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
+                  {errorMessage}
+                </div>
+              )}
+
               <form
                 onSubmit={handleSubmit}
                 className="space-y-6 flex-1 overflow-y-auto px-1"
@@ -274,13 +302,24 @@ function MecanoPage() {
                     <Label htmlFor="machine">Machine *</Label>
                     <Select
                       value={formData.machine}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
-                          machine: value,
-                          partie_machine: "",
-                        })
-                      }
+                      onValueChange={(value) => {
+                        try {
+                          setFormData({
+                            ...formData,
+                            machine: value,
+                            partie_machine: "",
+                          });
+                          setErrorMessage(null);
+                        } catch (error) {
+                          console.error(
+                            "Erreur lors du changement de machine:",
+                            error,
+                          );
+                          setErrorMessage(
+                            "Erreur lors de la sélection. Veuillez réessayer.",
+                          );
+                        }
+                      }}
                     >
                       <SelectTrigger id="machine">
                         <SelectValue placeholder="Sélectionner une machine" />
@@ -310,12 +349,23 @@ function MecanoPage() {
                           </Label>
                           <Select
                             value={formData.partie_machine}
-                            onValueChange={(value) =>
-                              setFormData({
-                                ...formData,
-                                partie_machine: value,
-                              })
-                            }
+                            onValueChange={(value) => {
+                              try {
+                                setFormData({
+                                  ...formData,
+                                  partie_machine: value,
+                                });
+                                setErrorMessage(null);
+                              } catch (error) {
+                                console.error(
+                                  "Erreur lors du changement de partie:",
+                                  error,
+                                );
+                                setErrorMessage(
+                                  "Erreur lors de la sélection. Veuillez réessayer.",
+                                );
+                              }
+                            }}
                           >
                             <SelectTrigger id="partie_machine">
                               <SelectValue placeholder="Sélectionner une partie" />
