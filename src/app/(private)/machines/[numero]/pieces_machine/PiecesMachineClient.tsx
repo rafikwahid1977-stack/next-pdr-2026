@@ -178,7 +178,7 @@ export default function PiecesMachineClient({ numero }: { numero: string }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {pdrs.map((pdr, index) => (
               <button
-                key={`${pdr.code}`}
+                key={`${pdr.code}-${pdr.numero}`}
                 onClick={() => handlePdrClick(index)}
                 className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-lg transition-all duration-200"
               >

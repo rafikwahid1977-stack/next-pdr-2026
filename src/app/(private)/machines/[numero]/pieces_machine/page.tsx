@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import PiecesMachineClient from "./PiecesMachineClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function Page({
   params,
 }: {
