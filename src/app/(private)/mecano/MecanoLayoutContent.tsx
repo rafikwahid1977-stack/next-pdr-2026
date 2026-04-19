@@ -60,8 +60,8 @@ export function MecanoLayoutContent({ children }: MecanoLayoutContentProps) {
     ? electroMenuItems
     : [
         { label: "Mecano", href: "/mecano" },
-        { label: "PDR's", href: "/machines" },
-        { label: "Permanance-electro", href: "/electro" },
+        { label: "PDR's", href: "/mecano/voir-pdrs" },
+        { label: "Permanances Électro", href: "/mecano/permanences-electro" },
       ];
 
   return (
